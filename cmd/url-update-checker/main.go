@@ -44,7 +44,7 @@ func main() {
 	}
 
 	command := args[1]
-	if command == "add" {
+	if command == "add" || command == "a" {
 		if len(args) < 3 {
 			log.Fatalf("usage: %v add <url>", args[0])
 		}
@@ -62,7 +62,7 @@ func main() {
 		}
 		fmt.Printf("Added: %v (id:%v)\n", url, id)
 	}
-	if command == "delete" {
+	if command == "delete" || command == "r" || command == "d" {
 		if len(args) < 3 {
 			log.Fatalf("usage: %v add <id>", args[0])
 		}
@@ -79,7 +79,7 @@ func main() {
 		}
 		fmt.Printf("Deleted: %v\n", id)
 	}
-	if command == "list" {
+	if command == "list" || command == "l" {
 		rows, err := db.Query(
 			`SELECT * FROM URLS`,
 		)
@@ -97,4 +97,5 @@ func main() {
 			fmt.Printf("%v\t%v\t%v\t%#v\n", e.ID, e.URL, time.Unix(e.Modified, 0), e.Etag)
 		}
 	}
+	fmt.Printf("Usage: %v [add|delete|list]\n", args[0])
 }
