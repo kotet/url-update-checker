@@ -3,8 +3,11 @@ package checker
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"os/user"
+	"strconv"
 	"sync"
 	"time"
 
@@ -63,7 +66,12 @@ func Check(db *sql.DB) error {
 						fmt.Fprintln(progress.Bypass(), "[Error]", err)
 						return
 					}
-					fmt.Fprintln(progress.Bypass(), "Etag changed: ", url)
+					err = savePage(*res, id)
+					if err != nil {
+						fmt.Fprintln(progress.Bypass(), "[Error]", err)
+						return
+					}
+					fmt.Fprintln(progress.Bypass(), "Etag changed: ", url, " (", etag, " -> ", newEtag, ")")
 				}
 			}
 			newModified, err := time.Parse(http.TimeFormat, newModifiedText)
@@ -76,7 +84,12 @@ func Check(db *sql.DB) error {
 					fmt.Fprintln(progress.Bypass(), "[Error]", err)
 					return
 				}
-				fmt.Fprintln(progress.Bypass(), "Last-Modified changed: ", url)
+				err = savePage(*res, id)
+				if err != nil {
+					fmt.Fprintln(progress.Bypass(), "[Error]", err)
+					return
+				}
+				fmt.Fprintln(progress.Bypass(), "Last-Modified changed: ", url, " (", time.Unix(modified, 0), " -> ", newModified, ")")
 			}
 			bar.Incr()
 		}(entry.ID, entry.URL, entry.Modified, entry.Etag)
@@ -121,4 +134,25 @@ func count(db *sql.DB) (int, error) {
 		return 0, err
 	}
 	return n, nil
+}
+
+func savePage(response http.Response, id uint64) error {
+	current, err := user.Current()
+	if err != nil {
+		return err
+	}
+	pagedir := current.HomeDir + "/.cache/url-update-checker/" + strconv.FormatUint(id, 10)
+	pagepath := pagedir + "/" + time.Now().Format("2006-01-02T150405Z0700")
+	os.MkdirAll(pagedir, os.ModePerm)
+	file, err := os.OpenFile(pagepath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	file.Write(body)
+	return nil
 }
