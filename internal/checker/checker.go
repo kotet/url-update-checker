@@ -71,7 +71,9 @@ func Check(db *sql.DB) error {
 						fmt.Fprintln(progress.Bypass(), "[Error]", err)
 						return
 					}
-					fmt.Fprintln(progress.Bypass(), "Etag changed: ", url, " (", etag, " -> ", newEtag, ")")
+					fmt.Fprintln(progress.Bypass(),
+						strconv.FormatUint(id, 10)+"\tEtag changed: ", url, " (", etag, " -> ", newEtag, ")",
+					)
 				}
 			}
 			newModified, err := time.Parse(http.TimeFormat, newModifiedText)
@@ -89,7 +91,9 @@ func Check(db *sql.DB) error {
 					fmt.Fprintln(progress.Bypass(), "[Error]", err)
 					return
 				}
-				fmt.Fprintln(progress.Bypass(), "Last-Modified changed: ", url, " (", time.Unix(modified, 0), " -> ", newModified, ")")
+				fmt.Fprintln(progress.Bypass(),
+					strconv.FormatUint(id, 10)+"\tLast-Modified changed: ", url, " (", time.Unix(modified, 0), " -> ", newModified, ")",
+				)
 			}
 			bar.Incr()
 		}(entry.ID, entry.URL, entry.Modified, entry.Etag)
